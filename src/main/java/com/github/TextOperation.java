@@ -21,18 +21,39 @@ public class TextOperation {
         this.targetLength = 0;
     }
 
-    public Integer getBaseLength() {
+    /**
+     * getBaseLength
+     *
+     * @return {@link Integer }
+     */
+    private Integer getBaseLength() {
         return this.baseLength;
     }
 
-    public Integer getTargetLength() {
+    /**
+     * getTargetLength
+     *
+     * @return {@link Integer }
+     */
+    private Integer getTargetLength() {
         return this.targetLength;
     }
 
-    public List<Object> getOps() {
+    /**
+     * getOps
+     *
+     * @return {@link List }<{@link Object }>
+     */
+    private List<Object> getOps() {
         return this.ops;
     }
 
+    /**
+     * isRetainOp
+     *
+     * @param object
+     * @return {@link Boolean }
+     */
     private static Boolean isRetainOp(Object object) {
         if (!(object instanceof Integer)) {
             return false;
@@ -41,10 +62,22 @@ public class TextOperation {
         return (Integer) object > 0;
     }
 
+    /**
+     * isInsertOp
+     *
+     * @param object
+     * @return {@link Boolean }
+     */
     private static Boolean isInsertOp(Object object) {
         return object instanceof String;
     }
 
+    /**
+     * isDeleteOp
+     *
+     * @param object
+     * @return {@link Boolean }
+     */
     private static Boolean isDeleteOp(Object object) {
         if (!(object instanceof Integer)) {
             return false;
@@ -53,6 +86,12 @@ public class TextOperation {
         return (Integer) object < 0;
     }
 
+    /**
+     * retain
+     *
+     * @param n
+     * @return {@link TextOperation }
+     */
     public TextOperation retain(Integer n) {
         if (0 == n) {
             return this;
@@ -75,6 +114,12 @@ public class TextOperation {
         return this;
     }
 
+    /**
+     * insert
+     *
+     * @param str
+     * @return {@link TextOperation }
+     */
     public TextOperation insert(String str) {
         if (null == str || "".equals(str)) {
             return this;
@@ -110,6 +155,12 @@ public class TextOperation {
         return this;
     }
 
+    /**
+     * delete
+     *
+     * @param n
+     * @return {@link TextOperation }
+     */
     public TextOperation delete(Integer n) {
         if (0 == n) {
             return this;
@@ -135,6 +186,11 @@ public class TextOperation {
         return this;
     }
 
+    /**
+     * toString
+     *
+     * @return {@link String }
+     */
     @Override
     public String toString() {
         List<String> lines = this.ops.stream().map(object -> {
@@ -152,6 +208,12 @@ public class TextOperation {
         return String.join(",", lines);
     }
 
+    /**
+     * apply
+     *
+     * @param str
+     * @return {@link String }
+     */
     public String apply(String str) {
         if (!this.baseLength.equals(str.length())) {
             throw new RuntimeException("The operation's base length must be equal to the string's length");
@@ -184,6 +246,13 @@ public class TextOperation {
         return newStr[0];
     }
 
+    /**
+     * transform
+     *
+     * @param textOperation1
+     * @param textOperation2
+     * @return {@link List }<{@link TextOperation }>
+     */
     public static List<TextOperation> transform(TextOperation textOperation1, TextOperation textOperation2) {
         if (!textOperation1.getBaseLength().equals(textOperation2.getBaseLength())) {
             throw new RuntimeException("Both operations have to have the same base length");
@@ -320,6 +389,12 @@ public class TextOperation {
         return textOperationList;
     }
 
+    /**
+     * compose
+     *
+     * @param textOperation2
+     * @return {@link TextOperation }
+     */
     public TextOperation compose(TextOperation textOperation2) {
         TextOperation textOperation1 = this;
         if (!textOperation1.getTargetLength().equals(textOperation2.getBaseLength())) {
@@ -444,6 +519,56 @@ public class TextOperation {
         }
 
         return textOperation;
+    }
+
+    public TextOperation invert(String str) {
+        final Integer[] strIndex = {0};
+        TextOperation invertTextOperation = new TextOperation();
+
+        this.ops.forEach(op -> {
+            if (TextOperation.isRetainOp(op)) {
+                invertTextOperation.retain((Integer) op);
+                strIndex[0] = strIndex[0] + (Integer) op;
+            } else if (TextOperation.isInsertOp(op)) {
+                invertTextOperation.delete((Integer) op);
+            } else if (TextOperation.isDeleteOp(op)) {
+                invertTextOperation.insert(str.substring(strIndex[0], -(Integer) op));
+                strIndex[0] = strIndex[0] - (Integer) op;
+            } else {
+                throw new RuntimeException("invalid operation");
+            }
+        });
+
+        return invertTextOperation;
+    }
+
+    /**
+     * composeWith TODO
+     *
+     * @param other
+     * @return {@link Boolean }
+     */
+    public Boolean composeWith(TextOperation other) {
+        return false;
+    }
+
+    /**
+     * composeWithInverted TODO
+     *
+     * @param other
+     * @return {@link Boolean }
+     */
+    public Boolean composeWithInverted(TextOperation other) {
+        return false;
+    }
+
+    /**
+     * isNoop（Tests whether this operation has no effect）
+     *
+     * @return {@link Boolean }
+     */
+    private Boolean isNoop() {
+        return this.getOps().size() == 0 || (this.getOps().size() == 1 && TextOperation.isRetainOp(this.getOps().get(0)));
     }
 
 }
